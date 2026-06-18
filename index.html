@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人工管理システム</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;font-size:14px;color:#1a1a1a;background:#f5f6f8;}
+label{font-size:13px;color:#555;display:block;margin-bottom:4px;margin-top:10px;}
+label:first-of-type{margin-top:0;}
+input,select,textarea{width:100%;font-size:14px;padding:8px 10px;border:1px solid #d0d0d0;border-radius:6px;font-family:inherit;background:#fff;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#185FA5;}
+textarea{resize:vertical;min-height:60px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:6px;font-size:14px;cursor:pointer;border:1px solid #d0d0d0;background:#fff;color:#1a1a1a;}
+.btn:hover{background:#f0f0f0;}
+.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5;}
+.btn-primary:hover{background:#0C447C;}
+.btn-primary:disabled{background:#9ab8d4;border-color:#9ab8d4;cursor:not-allowed;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-full{width:100%;}
+.btn-danger{border-color:#A32D2D;color:#A32D2D;}
+.btn-danger:hover{background:#FCEBEB;}
+.btn-add{border-color:#0F6E56;color:#0F6E56;}
+.btn-add:hover{background:#E1F5EE;}
+.header{background:#fff;border-bottom:1px solid #e2e2e2;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.header-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.badge{font-size:11px;padding:2px 8px;border-radius:10px;background:#E6F1FB;color:#0C447C;}
+.badge-admin{background:#EEEDFE;color:#3C3489;}
+.content{padding:16px 20px;max-width:900px;margin:0 auto;}
+.card{background:#fff;border:1px solid #e2e2e2;border-radius:10px;padding:20px;margin-bottom:14px;}
+.card-title{font-size:13px;font-weight:600;color:#555;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.screen{display:none;}
+.screen.active{display:block;}
+.tabs{display:flex;border-bottom:1px solid #e2e2e2;margin-bottom:16px;}
+.tab{padding:8px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:#777;}
+.tab.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:600;}
+.work-row{background:#f8f9fa;border:1px solid #e2e2e2;border-radius:8px;padding:12px;margin-bottom:10px;}
+.work-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.work-row-num{font-size:12px;font-weight:600;color:#555;display:flex;align-items:center;gap:6px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media (max-width:600px){.row3{grid-template-columns:1fr;}}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:7px 8px;font-weight:600;font-size:12px;color:#555;border-bottom:1px solid #e2e2e2;white-space:nowrap;}
+td{padding:7px 8px;border-bottom:1px solid #eee;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.tag{font-size:11px;padding:2px 8px;border-radius:10px;display:inline-block;}
+.tag-green{background:#EAF3DE;color:#27500A;}
+.tag-geo{background:#E6F1FB;color:#0C447C;}
+.tag-rh{background:#EEEDFE;color:#3C3489;}
+.tag-bika{background:#EAF3DE;color:#3B6D11;}
+.tag-other{background:#F1EFE8;color:#444441;}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.stat{background:#fff;border:1px solid #e2e2e2;border-radius:8px;padding:12px;}
+.stat-label{font-size:12px;color:#777;margin-bottom:4px;}
+.stat-value{font-size:22px;font-weight:600;}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.login-card{width:100%;max-width:340px;background:#fff;border:1px solid #e2e2e2;border-radius:10px;padding:2rem;}
+.alert{padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:12px;background:#E6F1FB;color:#0C447C;}
+.success-msg{padding:10px 14px;border-radius:6px;font-size:13px;background:#EAF3DE;color:#27500A;margin-top:10px;display:none;}
+.error-msg{padding:10px 14px;border-radius:6px;font-size:13px;background:#FCEBEB;color:#A32D2D;margin-top:10px;display:none;}
+.total-bar{display:flex;align-items:center;justify-content:space-between;background:#E6F1FB;border:1px solid #B5D4F4;border-radius:8px;padding:12px 16px;margin-bottom:14px;}
+.total-bar-label{font-size:13px;color:#185FA5;display:flex;align-items:center;gap:6px;}
+.total-bar-value{font-size:22px;font-weight:600;color:#185FA5;}
+.total-bar-unit{font-size:13px;color:#378ADD;margin-left:2px;}
+.master-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.master-tab{padding:5px 12px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid #d0d0d0;background:#f8f9fa;color:#555;}
+.master-tab.active{background:#185FA5;color:#fff;border-color:#185FA5;}
+.master-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.master-row input{flex:1;}
+.kubun-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;margin-right:6px;font-weight:600;}
+.kubun-GEO{background:#E6F1FB;color:#0C447C;}
+.kubun-RH{background:#EEEDFE;color:#3C3489;}
+.kubun-美化{background:#EAF3DE;color:#3B6D11;}
+.kubun-その他{background:#F1EFE8;color:#444441;}
+.place-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.place-kubun-sel{width:90px;flex-shrink:0;font-size:13px;}
+.place-name-inp{flex:1;font-size:13px;}
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.85);display:flex;align-items:center;justify-content:center;z-index:100;flex-direction:column;gap:10px;}
+.spinner{width:32px;height:32px;border:3px solid #d0d0d0;border-top-color:#185FA5;border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.icon{display:inline-block;width:1em;text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay" class="loading-overlay" style="display:none;">
+  <div class="spinner"></div>
+  <div id="loading-text" style="font-size:13px;color:#555;">読み込み中...</div>
+</div>
+
+<div class="app">
+
+<!-- ログイン -->
+<div id="screen-login" class="screen active">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div style="width:44px;height:44px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:22px;">🏗️</div>
+      <h2 style="font-size:18px;font-weight:600;margin-bottom:4px;">人工管理システム</h2>
+      <p style="font-size:13px;color:#777;margin-bottom:20px;">作業日報入力・管理</p>
+      <label>ユーザーID</label>
+      <input type="text" id="login-id" placeholder="ユーザーIDを入力" autocomplete="username">
+      <label>パスワード</label>
+      <input type="password" id="login-pass" placeholder="パスワードを入力" autocomplete="current-password">
+      <p id="login-error" style="font-size:12px;color:#A32D2D;margin-top:8px;display:none;">IDまたはパスワードが正しくありません</p>
+      <button class="btn btn-primary btn-full" style="margin-top:16px;" onclick="doLogin()" id="login-btn">
+        ログイン
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 作業員画面 -->
+<div id="screen-worker" class="screen">
+  <div class="header">
+    <div class="header-title">🏗️ 人工管理システム <span class="badge">作業員</span></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="worker-name-disp" style="font-size:13px;color:#777;"></span>
+      <button class="btn btn-sm" onclick="doLogout()">ログアウト</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('input',this)">日報入力</div>
+      <div class="tab" onclick="switchTab('history',this)">提出履歴</div>
+    </div>
+
+    <div id="tab-input">
+      <div class="card">
+        <div class="card-title">📅 基本情報</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label>作業日 <span style="color:#A32D2D">*</span></label>
+            <input type="date" id="w-date">
+          </div>
+          <div>
+            <label>作業者 <span style="color:#A32D2D">*</span></label>
+            <select id="w-name"></select>
+          </div>
+        </div>
+        <label>備考（自由記述）</label>
+        <textarea id="w-memo" placeholder="特記事項があれば記入してください"></textarea>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>🔧 作業内容</span>
+          <button class="btn btn-sm btn-add" onclick="addWorkRow()">＋ 作業を追加</button>
+        </div>
+        <div id="work-rows"></div>
+      </div>
+
+      <div class="total-bar">
+        <div class="total-bar-label">⏱ 本日の合計作業時間</div>
+        <div><span class="total-bar-value" id="total-hours-disp">0</span><span class="total-bar-unit">時間</span></div>
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="submitReport()" id="submit-btn">
+        日報を提出する（スプレッドシートへ保存）
+      </button>
+      <div class="success-msg" id="submit-msg">✓ 日報を提出しました。Googleスプレッドシートへ保存されました。</div>
+      <div class="error-msg" id="submit-error">送信に失敗しました。通信環境を確認して再度お試しください。</div>
+    </div>
+
+    <div id="tab-history" style="display:none;">
+      <div class="card">
+        <div class="card-title">🕒 提出済み日報</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>作業日</th><th>区分</th><th>物件略名</th><th>作業項目</th><th>時間</th><th>備考</th></tr></thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 管理者画面 -->
+<div id="screen-admin" class="screen">
+  <div class="header">
+    <div class="header-title">🏗️ 人工管理システム <span class="badge badge-admin">管理者</span></div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-sm" onclick="exportCSV()">⬇ CSV出力</button>
+      <button class="btn btn-sm" onclick="doLogout()">ログアウト</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="tabs">
+      <div class="tab active" onclick="switchAdminTab('list',this)">日報一覧</div>
+      <div class="tab" onclick="switchAdminTab('master',this)">マスタ管理</div>
+    </div>
+
+    <div id="admin-tab-list">
+      <div class="stat-grid" id="admin-stats"></div>
+      <div class="card">
+        <div class="card-title">📋 日報一覧</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <select id="filter-kubun" style="width:auto;" onchange="renderAdminList()">
+            <option value="">区分：すべて</option>
+            <option>GEO</option><option>RH</option><option>美化</option><option>その他</option>
+          </select>
+          <input type="text" id="filter-name" placeholder="作業者で絞り込み" style="width:auto;flex:1;min-width:80px;" oninput="renderAdminList()">
+          <input type="date" id="filter-date" style="width:auto;" oninput="renderAdminList()">
+          <button class="btn btn-sm" onclick="clearFilter()">クリア</button>
+          <button class="btn btn-sm" onclick="refreshReports()">🔄 再読込</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>タイムスタンプ</th><th>作業日</th><th>作業者</th><th>区分</th><th>物件略名</th><th>作業項目</th><th>作業時間</th><th>備考</th></tr></thead>
+            <tbody id="admin-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-tab-master" style="display:none;">
+      <div class="card">
+        <div class="alert">マスタの追加・編集・削除はGoogleスプレッドシートの各マスタシートを直接編集してください。編集後、このページで「再読込」を押すと反映されます。</div>
+        <button class="btn btn-sm" onclick="loadMaster()">🔄 マスタを再読込</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="card">
+          <div class="card-title">👤 作業者マスタ（現在の登録）</div>
+          <div id="master-names-view"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">⏱ 作業時間マスタ（現在の登録）</div>
+          <div id="master-hours-view"></div>
+        </div>
+        <div class="card" style="grid-column:1/-1;">
+          <div class="card-title">📍 物件略名マスタ（現在の登録）</div>
+          <div id="master-places-view"></div>
+        </div>
+        <div class="card" style="grid-column:1/-1;">
+          <div class="card-title">🔨 作業項目マスタ（現在の登録）</div>
+          <div id="master-tasks-view"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* ============================================================
+   ▼▼▼ 設定：ここにGASのWebアプリURLを貼り付けてください ▼▼▼
+   ============================================================ */
+const GAS_URL = https://script.google.com/macros/s/AKfycbyZLImM3G3_s7mQDjujB_S5EffN0Wb2nrTXsA1hJUadg1UISJXfaHA3S1hHYjuJqVjl/exec
+ // 例: https://script.google.com/macros/s/XXXXXXXX/exec
+
+/* ============================================================
+   状態管理
+   ============================================================ */
+const KUBUN_LIST = ['GEO','RH','美化','その他'];
+
+let currentUser = null;
+let master = { names: [], hours: [], places: [], tasks: {} };
+let reports = [];
+let rowCount = 0;
+let currentTaskKubun = 'GEO';
+
+/* ============================================================
+   起動時：マスタを読み込む
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('w-date') && (document.getElementById('w-date').value = todayStr());
+  loadMaster();
+});
+
+function todayStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function showLoading(text){
+  document.getElementById('loading-text').textContent = text || '読み込み中...';
+  document.getElementById('loading-overlay').style.display = 'flex';
+}
+function hideLoading(){
+  document.getElementById('loading-overlay').style.display = 'none';
+}
+
+/* ============================================================
+   GAS通信
+   ============================================================ */
+async function loadMaster(){
+  if(!isGasConfigured()) return; // URL未設定時はスキップ（デモ用フォールバックは下部にあります）
+  showLoading('マスタデータを読み込み中...');
+  try{
+    const res = await fetch(GAS_URL + '?action=master');
+    const data = await res.json();
+    master.names  = data.workers || [];
+    master.hours  = data.hours || [];
+    master.places = data.places || [];
+    master.tasks  = {};
+    (data.tasks || []).forEach(t=>{
+      if(!master.tasks[t.kubun]) master.tasks[t.kubun] = [];
+      master.tasks[t.kubun].push(t.task);
+    });
+    renderMasterView();
+  }catch(err){
+    console.error('マスタ読み込み失敗', err);
+    alert('マスタデータの読み込みに失敗しました。GAS_URLの設定を確認してください。');
+  }finally{
+    hideLoading();
+  }
+}
+
+async function loadReports(){
+  if(!isGasConfigured()) return;
+  showLoading('日報データを読み込み中...');
+  try{
+    const res = await fetch(GAS_URL + '?action=reports');
+    const data = await res.json();
+    reports = data.reports || [];
+  }catch(err){
+    console.error('日報読み込み失敗', err);
+  }finally{
+    hideLoading();
+  }
+}
+
+async function sendToGAS(records){
+  if(!isGasConfigured()){
+    alert('GAS_URLが設定されていません。コード内の GAS_URL を実際のWebアプリURLに置き換えてください。');
+    return false;
+  }
+  try{
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors', // GAS Webアプリはno-corsで送信（応答は読めないが保存は実行される）
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({records}),
+    });
+    return true;
+  }catch(err){
+    console.error('送信失敗', err);
+    return false;
+  }
+}
+
+function isGasConfigured(){
+  return GAS_URL && GAS_URL.startsWith('https://script.google.com/');
+}
+
+/* ============================================================
+   ログイン／ログアウト
+   ============================================================ */
+async function doLogin(){
+  const id = document.getElementById('login-id').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  document.getElementById('login-error').style.display = 'none';
+  if(!id || !pass){
+    document.getElementById('login-error').textContent = 'IDとパスワードを入力してください';
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+
+  if(!isGasConfigured()){
+    document.getElementById('login-error').textContent = 'GAS_URLが未設定です。コードを確認してください。';
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+
+  showLoading('認証中...');
+  try{
+    const res = await fetch(GAS_URL + `?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`);
+    const data = await res.json();
+    hideLoading();
+    if(data.status !== 'ok'){
+      document.getElementById('login-error').style.display = 'block';
+      return;
+    }
+    currentUser = { id, name: data.name, role: data.role };
+    showScreen(data.role === 'admin' ? 'admin' : 'worker');
+  }catch(err){
+    hideLoading();
+    document.getElementById('login-error').textContent = '通信エラーが発生しました';
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function doLogout(){
+  currentUser = null;
+  document.getElementById('login-id').value = '';
+  document.getElementById('login-pass').value = '';
+  showScreen('login');
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  if(name === 'worker') initWorker();
+  if(name === 'admin'){ loadReports().then(renderAdminList); renderMasterView(); }
+}
+
+/* ============================================================
+   作業員：日報入力
+   ============================================================ */
+function initWorker(){
+  document.getElementById('worker-name-disp').textContent = currentUser.name;
+  document.getElementById('w-date').value = todayStr();
+  document.getElementById('w-memo').value = '';
+  document.getElementById('submit-msg').style.display = 'none';
+  document.getElementById('submit-error').style.display = 'none';
+  const sel = document.getElementById('w-name');
+  sel.innerHTML = master.names.map(n => `<option${n===currentUser.name?' selected':''}>${esc(n)}</option>`).join('');
+  rowCount = 0;
+  document.getElementById('work-rows').innerHTML = '';
+  addWorkRow();
+  calcTotal();
+}
+
+function getKubunForPlace(placeName){
+  const p = master.places.find(p => p.name === placeName);
+  return p ? p.kubun : 'その他';
+}
+
+function buildPlaceOptions(){
+  let html = '';
+  KUBUN_LIST.forEach(k=>{
+    const items = master.places.filter(p => p.kubun === k);
+    if(!items.length) return;
+    html += `<optgroup label="【${k}】">`;
+    items.forEach(p => html += `<option value="${esc(p.name)}">${esc(p.name)}</option>`);
+    html += `</optgroup>`;
+  });
+  return html;
+}
+
+function buildTaskOptions(kubun){
+  const tasks = master.tasks[kubun] || [];
+  return tasks.map(t => `<option>${esc(t)}</option>`).join('');
+}
+
+function addWorkRow(){
+  rowCount++;
+  const n = rowCount;
+  const div = document.createElement('div');
+  div.className = 'work-row';
+  div.id = 'work-row-' + n;
+
+  const firstPlace = master.places[0];
+  const firstKubun = firstPlace ? firstPlace.kubun : 'GEO';
+
+  div.innerHTML = `
+    <div class="work-row-header">
+      <span class="work-row-num">作業 ${n}
+        <span class="kubun-badge kubun-${firstKubun}" id="row-kubun-badge-${n}">${firstKubun}</span>
+      </span>
+      ${n>1 ? `<button class="btn btn-sm btn-danger" onclick="removeRow(${n})">削除</button>` : '<span></span>'}
+    </div>
+    <div class="row3">
+      <div>
+        <label>物件略名 <span style="color:#A32D2D">*</span></label>
+        <select id="row-place-${n}" onchange="onPlaceChange(${n})">${buildPlaceOptions()}</select>
+      </div>
+      <div>
+        <label>作業項目 <span style="color:#A32D2D">*</span></label>
+        <select id="row-task-${n}">${buildTaskOptions(firstKubun)}</select>
+      </div>
+      <div>
+        <label>作業時間 <span style="color:#A32D2D">*</span></label>
+        <select id="row-hours-${n}" onchange="calcTotal()">${master.hours.map(h=>`<option value="${h}">${h}時間</option>`).join('')}</select>
+      </div>
+    </div>
+  `;
+  document.getElementById('work-rows').appendChild(div);
+  calcTotal();
+}
+
+function onPlaceChange(n){
+  const placeName = document.getElementById('row-place-'+n).value;
+  const kubun = getKubunForPlace(placeName);
+  const badge = document.getElementById('row-kubun-badge-'+n);
+  if(badge){ badge.className = 'kubun-badge kubun-'+kubun; badge.textContent = kubun; }
+  const taskSel = document.getElementById('row-task-'+n);
+  taskSel.innerHTML = buildTaskOptions(kubun);
+}
+
+function removeRow(n){
+  const el = document.getElementById('work-row-'+n);
+  if(el) el.remove();
+  calcTotal();
+}
+
+function calcTotal(){
+  let total = 0;
+  document.querySelectorAll('.work-row').forEach(el=>{
+    const id = el.id.replace('work-row-','');
+    const hEl = document.getElementById('row-hours-'+id);
+    if(hEl) total += parseFloat(hEl.value) || 0;
+  });
+  document.getElementById('total-hours-disp').textContent = total % 1 === 0 ? total : total.toFixed(1);
+}
+
+function getTimestamp(){
+  const now = new Date();
+  const pad = v => String(v).padStart(2,'0');
+  return `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+async function submitReport(){
+  const date = document.getElementById('w-date').value;
+  const name = document.getElementById('w-name').value;
+  const memo = document.getElementById('w-memo').value.trim();
+  document.getElementById('submit-msg').style.display = 'none';
+  document.getElementById('submit-error').style.display = 'none';
+
+  if(!date || !name){ alert('作業日と作業者を入力してください'); return; }
+
+  const rows = [];
+  document.querySelectorAll('.work-row').forEach(el=>{
+    const id = el.id.replace('work-row-','');
+    const place = document.getElementById('row-place-'+id)?.value;
+    const task = document.getElementById('row-task-'+id)?.value;
+    const hours = parseFloat(document.getElementById('row-hours-'+id)?.value) || 0;
+    if(place && task && hours){
+      rows.push({place, kubun:getKubunForPlace(place), task, hours});
+    }
+  });
+  if(!rows.length){ alert('作業内容を1つ以上入力してください'); return; }
+
+  const ts = getTimestamp();
+  const records = rows.map(row => ({
+    timestamp: ts, date, worker: name,
+    kubun: row.kubun, place: row.place, task: row.task,
+    hours: row.hours, memo
+  }));
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  const ok = await sendToGAS(records);
+
+  btn.disabled = false;
+  btn.textContent = '日報を提出する（スプレッドシートへ保存）';
+
+  if(ok){
+    document.getElementById('submit-msg').style.display = 'block';
+    setTimeout(()=>document.getElementById('submit-msg').style.display='none', 5000);
+    records.forEach(r => reports.push(r));
+    rowCount = 0;
+    document.getElementById('work-rows').innerHTML = '';
+    addWorkRow();
+    document.getElementById('w-memo').value = '';
+    calcTotal();
+  }else{
+    document.getElementById('submit-error').style.display = 'block';
+  }
+}
+
+function switchTab(tab, el){
+  document.querySelectorAll('#screen-worker .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-input').style.display = tab === 'input' ? '' : 'none';
+  document.getElementById('tab-history').style.display = tab === 'history' ? '' : 'none';
+  if(tab === 'history') renderHistory();
+}
+
+function kubunTag(k){
+  const map = {GEO:'geo', RH:'rh', '美化':'bika', 'その他':'other'};
+  return `<span class="tag tag-${map[k]||'other'}">${esc(k)}</span>`;
+}
+
+function renderHistory(){
+  const mine = reports.filter(r => r.worker === currentUser.name).sort((a,b)=>b.timestamp.localeCompare(a.timestamp));
+  const tbody = document.getElementById('history-body');
+  if(!mine.length){ tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#777;">まだ日報がありません</td></tr>'; return; }
+  tbody.innerHTML = mine.map(r => `<tr>
+    <td>${esc(r.date)}</td>
+    <td>${kubunTag(r.kubun)}</td>
+    <td>${esc(r.place)}</td><td>${esc(r.task)}</td>
+    <td style="text-align:center;">${r.hours}</td>
+    <td style="color:#777;font-size:12px;">${esc(r.memo)||'—'}</td>
+  </tr>`).join('');
+}
+
+/* ============================================================
+   管理者：一覧
+   ============================================================ */
+async function refreshReports(){
+  await loadReports();
+  renderAdminList();
+}
+
+function renderAdminList(){
+  const fk = document.getElementById('filter-kubun').value;
+  const fn = document.getElementById('filter-name').value.toLowerCase();
+  const fd = document.getElementById('filter-date').value;
+  const data = reports.filter(r=>{
+    if(fk && r.kubun !== fk) return false;
+    if(fn && !String(r.worker).toLowerCase().includes(fn)) return false;
+    if(fd && r.date !== fd) return false;
+    return true;
+  }).sort((a,b)=>String(b.timestamp).localeCompare(String(a.timestamp)));
+
+  const tbody = document.getElementById('admin-body');
+  if(!data.length){ tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#777;">該当データなし</td></tr>'; }
+  else {
+    tbody.innerHTML = data.map(r => `<tr>
+      <td style="white-space:nowrap;font-size:11px;">${esc(r.timestamp)}</td>
+      <td>${esc(r.date)}</td><td>${esc(r.worker)}</td>
+      <td>${kubunTag(r.kubun)}</td>
+      <td>${esc(r.place)}</td><td>${esc(r.task)}</td>
+      <td style="text-align:center;">${r.hours}</td>
+      <td style="color:#777;font-size:12px;">${esc(r.memo)||'—'}</td>
+    </tr>`).join('');
+  }
+
+  const names = new Set(reports.map(r=>r.worker));
+  const totalH = reports.reduce((acc,r)=>acc+(parseFloat(r.hours)||0),0);
+  document.getElementById('admin-stats').innerHTML = `
+    <div class="stat"><div class="stat-label">登録レコード数</div><div class="stat-value">${reports.length}<span style="font-size:14px;color:#777"> 件</span></div></div>
+    <div class="stat"><div class="stat-label">作業者数</div><div class="stat-value">${names.size}<span style="font-size:14px;color:#777"> 人</span></div></div>
+    <div class="stat"><div class="stat-label">総工数</div><div class="stat-value">${totalH%1===0?totalH:totalH.toFixed(1)}<span style="font-size:14px;color:#777"> h</span></div></div>
+  `;
+}
+
+function clearFilter(){
+  document.getElementById('filter-kubun').value = '';
+  document.getElementById('filter-name').value = '';
+  document.getElementById('filter-date').value = '';
+  renderAdminList();
+}
+
+function switchAdminTab(tab, el){
+  document.querySelectorAll('#screen-admin .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('admin-tab-list').style.display = tab === 'list' ? '' : 'none';
+  document.getElementById('admin-tab-master').style.display = tab === 'master' ? '' : 'none';
+}
+
+/* ============================================================
+   管理者：マスタ閲覧（編集はスプレッドシート側で実施）
+   ============================================================ */
+function renderMasterView(){
+  const namesEl = document.getElementById('master-names-view');
+  if(namesEl) namesEl.innerHTML = master.names.length
+    ? master.names.map(n=>`<span class="tag tag-green" style="margin:2px;">${esc(n)}</span>`).join('')
+    : '<p style="color:#777;font-size:13px;">未登録</p>';
+
+  const hoursEl = document.getElementById('master-hours-view');
+  if(hoursEl) hoursEl.innerHTML = master.hours.length
+    ? master.hours.map(h=>`<span class="tag" style="background:#f0f0f0;margin:2px;">${esc(h)}時間</span>`).join('')
+    : '<p style="color:#777;font-size:13px;">未登録</p>';
+
+  const placesEl = document.getElementById('master-places-view');
+  if(placesEl){
+    placesEl.innerHTML = KUBUN_LIST.map(k=>{
+      const items = master.places.filter(p=>p.kubun===k);
+      if(!items.length) return '';
+      return `<div style="margin-bottom:8px;"><span class="kubun-badge kubun-${k}">${k}</span> ${items.map(p=>esc(p.name)).join('、')}</div>`;
+    }).join('') || '<p style="color:#777;font-size:13px;">未登録</p>';
+  }
+
+  const tasksEl = document.getElementById('master-tasks-view');
+  if(tasksEl){
+    tasksEl.innerHTML = KUBUN_LIST.map(k=>{
+      const items = master.tasks[k] || [];
+      if(!items.length) return '';
+      return `<div style="margin-bottom:8px;"><span class="kubun-badge kubun-${k}">${k}</span> ${items.map(t=>esc(t)).join('、')}</div>`;
+    }).join('') || '<p style="color:#777;font-size:13px;">未登録</p>';
+  }
+}
+
+/* ============================================================
+   CSV出力
+   ============================================================ */
+function exportCSV(){
+  const bom = '\uFEFF';
+  const header = ['タイムスタンプ','作業日','作業者','区分','物件略名','作業項目','作業時間','備考'];
+  const rows = reports.map(r=>[r.timestamp,r.date,r.worker,r.kubun,r.place,r.task,r.hours,r.memo||'']);
+  const csv = bom + [header, ...rows].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = '人工管理_' + todayStr() + '.csv';
+  a.click();
+}
+
+/* ============================================================
+   ユーティリティ
+   ============================================================ */
+function esc(s){
+  if(s === undefined || s === null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+</body>
+</html>
