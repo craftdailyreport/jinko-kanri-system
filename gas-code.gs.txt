@@ -1,0 +1,165 @@
+/* ============================================================
+   人工管理システム - Google Apps Script
+   スプレッドシートの「拡張機能 → Apps Script」に
+   このコードをすべて貼り付けて保存してください。
+   ============================================================
+
+   【必要なシート構成】
+
+   1. 日報
+      A:タイムスタンプ B:作業日 C:作業者 D:区分 E:物件略名 F:作業項目 G:作業時間 H:備考
+
+   2. マスタ_作業者
+      A:作業者名
+
+   3. マスタ_物件
+      A:区分  B:物件略名
+
+   4. マスタ_作業項目
+      A:区分  B:作業項目
+
+   5. マスタ_時間
+      A:時間（例: 0.5, 1, 1.5 ...）
+
+   6. マスタ_ユーザー
+      A:ユーザーID  B:パスワード  C:氏名  D:権限（worker または admin）
+
+   ※ 1行目はヘッダー行。データは2行目から入力してください。
+   ============================================================ */
+
+const SS = SpreadsheetApp.getActiveSpreadsheet();
+
+/* ===== GET：ログイン認証・マスタ取得・日報取得 ===== */
+function doGet(e) {
+  try {
+    const action = e.parameter.action;
+
+    if (action === 'login') {
+      return handleLogin(e.parameter.id, e.parameter.pass);
+    }
+    if (action === 'master') {
+      return handleGetMaster();
+    }
+    if (action === 'reports') {
+      return handleGetReports();
+    }
+
+    return response({ status: 'error', message: 'invalid action' });
+  } catch (err) {
+    return response({ status: 'error', message: err.message });
+  }
+}
+
+/* ===== POST：日報保存 ===== */
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const sheet = SS.getSheetByName('日報');
+
+    data.records.forEach(r => {
+      sheet.appendRow([
+        r.timestamp,
+        r.date,
+        r.worker,
+        r.kubun,
+        r.place,
+        r.task,
+        r.hours,
+        r.memo
+      ]);
+    });
+
+    return response({ status: 'ok' });
+  } catch (err) {
+    return response({ status: 'error', message: err.message });
+  }
+}
+
+/* ===== ログイン認証 ===== */
+function handleLogin(id, pass) {
+  const sheet = SS.getSheetByName('マスタ_ユーザー');
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues();
+
+  for (const row of rows) {
+    const [uid, upass, uname, urole] = row;
+    if (String(uid) === String(id) && String(upass) === String(pass)) {
+      return response({ status: 'ok', name: uname, role: urole });
+    }
+  }
+  return response({ status: 'error', message: 'invalid credentials' });
+}
+
+/* ===== マスタ取得 ===== */
+function handleGetMaster() {
+  const workers = getCol('マスタ_作業者', 1);
+  const placesRaw = getRows('マスタ_物件', 2);
+  const tasksRaw = getRows('マスタ_作業項目', 2);
+  const hours = getCol('マスタ_時間', 1);
+
+  return response({
+    workers: workers,
+    places: placesRaw.map(r => ({ kubun: r[0], name: r[1] })),
+    tasks: tasksRaw.map(r => ({ kubun: r[0], task: r[1] })),
+    hours: hours
+  });
+}
+
+/* ===== 日報取得（管理者用） ===== */
+function handleGetReports() {
+  const sheet = SS.getSheetByName('日報');
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return response({ reports: [] });
+
+  const rows = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+  const reports = rows
+    .filter(r => r[0] !== '')
+    .map(r => ({
+      timestamp: formatTimestamp(r[0]),
+      date: formatDate(r[1]),
+      worker: r[2],
+      kubun: r[3],
+      place: r[4],
+      task: r[5],
+      hours: r[6],
+      memo: r[7]
+    }));
+
+  return response({ reports: reports });
+}
+
+/* ===== ユーティリティ ===== */
+function getCol(sheetName, col) {
+  const sh = SS.getSheetByName(sheetName);
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return [];
+  return sh.getRange(2, col, lastRow - 1, 1)
+    .getValues().flat().filter(v => v !== '');
+}
+
+function getRows(sheetName, numCols) {
+  const sh = SS.getSheetByName(sheetName);
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return [];
+  return sh.getRange(2, 1, lastRow - 1, numCols)
+    .getValues().filter(r => r[0] !== '');
+}
+
+function formatTimestamp(v) {
+  if (v instanceof Date) {
+    return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy/MM/dd HH:mm:ss');
+  }
+  return v;
+}
+
+function formatDate(v) {
+  if (v instanceof Date) {
+    return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return v;
+}
+
+function response(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
