@@ -248,9 +248,7 @@ tr:last-child td{border-bottom:none;}
 /* ============================================================
    ▼▼▼ 設定：ここにGASのWebアプリURLを貼り付けてください ▼▼▼
    ============================================================ */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyZLImM3G3_s7mQDjujB_S5EffN0Wb2nrTXsA1hJUadg1UISJXfaHA3S1hHYjuJqVjl/exec';
-  
- // 例: https://script.google.com/macros/s/XXXXXXXX/exec
+const GAS_URL = 'ここにGASのWebアプリURLを貼り付け'; // 例: https://script.google.com/macros/s/XXXXXXXX/exec
 
 /* ============================================================
    状態管理
@@ -526,17 +524,20 @@ async function submitReport(){
   if(!rows.length){ alert('作業内容を1つ以上入力してください'); return; }
 
   const ts = getTimestamp();
+  // 画面表示用（区分を保持。提出履歴の即時表示に使う）
   const records = rows.map(row => ({
     timestamp: ts, date, worker: name,
     kubun: row.kubun, place: row.place, task: row.task,
     hours: row.hours, memo
   }));
+  // スプレッドシート送信用（区分は保存しない：物件略名から後で引き当てる）
+  const sheetRecords = records.map(({kubun, ...rest}) => rest);
 
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
   btn.textContent = '送信中...';
 
-  const ok = await sendToGAS(records);
+  const ok = await sendToGAS(sheetRecords);
 
   btn.disabled = false;
   btn.textContent = '日報を提出する（スプレッドシートへ保存）';
@@ -568,13 +569,19 @@ function kubunTag(k){
   return `<span class="tag tag-${map[k]||'other'}">${esc(k)}</span>`;
 }
 
+// 日報レコードの区分を取得（保存済みデータはkubunを持たないため、
+// 物件略名からマスタ_物件を参照してその場で引き当てる）
+function reportKubun(r){
+  return r.kubun || getKubunForPlace(r.place);
+}
+
 function renderHistory(){
   const mine = reports.filter(r => r.worker === currentUser.name).sort((a,b)=>b.timestamp.localeCompare(a.timestamp));
   const tbody = document.getElementById('history-body');
   if(!mine.length){ tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#777;">まだ日報がありません</td></tr>'; return; }
   tbody.innerHTML = mine.map(r => `<tr>
     <td>${esc(r.date)}</td>
-    <td>${kubunTag(r.kubun)}</td>
+    <td>${kubunTag(reportKubun(r))}</td>
     <td>${esc(r.place)}</td><td>${esc(r.task)}</td>
     <td style="text-align:center;">${r.hours}</td>
     <td style="color:#777;font-size:12px;">${esc(r.memo)||'—'}</td>
@@ -594,7 +601,7 @@ function renderAdminList(){
   const fn = document.getElementById('filter-name').value.toLowerCase();
   const fd = document.getElementById('filter-date').value;
   const data = reports.filter(r=>{
-    if(fk && r.kubun !== fk) return false;
+    if(fk && reportKubun(r) !== fk) return false;
     if(fn && !String(r.worker).toLowerCase().includes(fn)) return false;
     if(fd && r.date !== fd) return false;
     return true;
@@ -606,7 +613,7 @@ function renderAdminList(){
     tbody.innerHTML = data.map(r => `<tr>
       <td style="white-space:nowrap;font-size:11px;">${esc(r.timestamp)}</td>
       <td>${esc(r.date)}</td><td>${esc(r.worker)}</td>
-      <td>${kubunTag(r.kubun)}</td>
+      <td>${kubunTag(reportKubun(r))}</td>
       <td>${esc(r.place)}</td><td>${esc(r.task)}</td>
       <td style="text-align:center;">${r.hours}</td>
       <td style="color:#777;font-size:12px;">${esc(r.memo)||'—'}</td>
@@ -675,7 +682,7 @@ function renderMasterView(){
 function exportCSV(){
   const bom = '\uFEFF';
   const header = ['タイムスタンプ','作業日','作業者','区分','物件略名','作業項目','作業時間','備考'];
-  const rows = reports.map(r=>[r.timestamp,r.date,r.worker,r.kubun,r.place,r.task,r.hours,r.memo||'']);
+  const rows = reports.map(r=>[r.timestamp,r.date,r.worker,reportKubun(r),r.place,r.task,r.hours,r.memo||'']);
   const csv = bom + [header, ...rows].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));

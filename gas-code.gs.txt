@@ -7,7 +7,8 @@
    【必要なシート構成】
 
    1. 日報
-      A:タイムスタンプ B:作業日 C:作業者 D:区分 E:物件略名 F:作業項目 G:作業時間 H:備考
+      A:タイムスタンプ B:作業日 C:作業者 D:物件略名 E:作業項目 F:作業時間 G:備考
+      ※区分は保存しません（物件略名からマスタ_物件を参照して画面表示時に判定します）
 
    2. マスタ_作業者
       A:作業者名
@@ -61,7 +62,6 @@ function doPost(e) {
         r.timestamp,
         r.date,
         r.worker,
-        r.kubun,
         r.place,
         r.task,
         r.hours,
@@ -110,18 +110,18 @@ function handleGetReports() {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return response({ reports: [] });
 
-  const rows = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+  const rows = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
   const reports = rows
     .filter(r => r[0] !== '')
     .map(r => ({
       timestamp: formatTimestamp(r[0]),
       date: formatDate(r[1]),
       worker: r[2],
-      kubun: r[3],
-      place: r[4],
-      task: r[5],
-      hours: r[6],
-      memo: r[7]
+      place: r[3],
+      task: r[4],
+      hours: r[5],
+      memo: r[6]
+      // 区分は保存していないため返却しない（クライアント側でマスタ_物件から判定）
     }));
 
   return response({ reports: reports });
